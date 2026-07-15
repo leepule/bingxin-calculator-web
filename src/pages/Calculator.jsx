@@ -98,8 +98,8 @@ function EnhancementSettings({ fieldsBySection, customization, onChange }) {
     <div className="mt-5 grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
       <article className="card p-5 sm:p-6">
         <p className="eyebrow">Enchantments</p><h3 className="mt-1 text-lg font-semibold text-white">大小附魔</h3><p className="mt-2 text-xs leading-5 text-stone-600">每个选项均写入工作簿原始输入单元格并自动重算。</p>
-        <p className="mb-3 mt-5 text-xs font-semibold text-stone-400">大附魔</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{selects('大附魔')}</div>
-        <div className="mt-6 border-t border-white/[0.06] pt-5"><p className="mb-3 text-xs font-semibold text-stone-400">小附魔</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{selects('小附魔')}</div></div>
+        <p className="mb-3 mt-5 text-xs font-semibold text-stone-400">小附魔</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{selects('大附魔')}</div>
+        <div className="mt-6 border-t border-white/[0.06] pt-5"><p className="mb-3 text-xs font-semibold text-stone-400">大附魔</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{selects('小附魔')}</div></div>
       </article>
       <article className="card p-5 sm:p-6"><p className="eyebrow">Sockets</p><h3 className="mt-1 text-lg font-semibold text-white">镶嵌与精炼</h3><p className="mt-2 text-xs leading-5 text-stone-600">五彩石属性二、三会根据前置属性按工作簿公式联动。</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">{selects('镶嵌')}</div></article>
     </div>
