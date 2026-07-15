@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-ink: 16 12 22;
+  --color-panel: 25 19 31;
+}
+
+html.light {
+  --color-ink: 248 245 248;
+  --color-panel: 255 255 255;
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  body { @apply min-h-screen overflow-x-hidden bg-ink text-stone-200 antialiased; }
+  button, input, select { @apply outline-none; }
+  ::selection { @apply bg-rose-500/40 text-white; }
+}
+
+@layer components {
+  .glass { @apply border border-white/10 bg-panel/80 shadow-glow backdrop-blur-xl; }
+  .card { @apply glass rounded-2xl; }
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-300; }
+  .nav-button { @apply whitespace-nowrap rounded-full border border-transparent px-4 py-2 text-sm font-medium text-stone-400 transition hover:border-white/10 hover:bg-white/5 hover:text-white; }
+  .nav-button.is-active { @apply border-rose-400/30 bg-rose-400/10 text-rose-300; }
+  .metric-label { @apply text-xs font-medium text-stone-500; }
+  .metric-value { @apply mt-2 text-2xl font-semibold tracking-tight text-white; }
+  .chip { @apply inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-stone-300; }
+  .soft-input { @apply w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white placeholder:text-stone-600 focus:border-rose-400/50 focus:ring-2 focus:ring-rose-400/10; }
+  .table-head { @apply sticky top-0 z-10 bg-[#211927] text-left text-[11px] font-semibold uppercase tracking-wider text-stone-500; }
+}
+
+.page-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+.scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar::-webkit-scrollbar-track { background: transparent; }
+.scrollbar::-webkit-scrollbar-thumb { background: #45344f; border-radius: 999px; }
+
+html.light body { color: #302832; }
+html.light .text-white { color: #241d27 !important; }
+html.light .text-stone-200 { color: #3d3540 !important; }
+html.light .text-stone-300 { color: #514753 !important; }
+html.light .text-stone-400 { color: #685d69 !important; }
+html.light .text-stone-500 { color: #7f7181 !important; }
+html.light .text-stone-600 { color: #9b8d9c !important; }
+html.light .text-ink { color: #24151e !important; }
+html.light [class*="text-emerald-"] { color: #047857 !important; }
+html.light [class*="text-violet-"] { color: #6d28d9 !important; }
+html.light [class*="text-amber-"] { color: #92400e !important; }
+html.light [class*="bg-black/"] { background-color: rgba(70, 44, 70, .045) !important; }
+html.light [class*="bg-white/"] { background-color: rgba(92, 61, 92, .055) !important; }
+html.light [class*="border-white/"] { border-color: rgba(92, 61, 92, .16) !important; }
+html.light .glass { box-shadow: 0 0 0 1px rgba(157, 104, 143, .12), 0 18px 50px rgba(74, 44, 69, .1); }
+html.light .table-head { background: #f1eaf1; color: #806d7f; }
+html.light .theme-popover { background: #fff !important; border-color: rgba(92, 61, 92, .2); box-shadow: 0 20px 50px rgba(53, 30, 49, .2); }
+html.light .page-grid {
+  background-image:
+    linear-gradient(rgba(91, 57, 91, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 57, 91, .045) 1px, transparent 1px);
+}
+html.light .scrollbar::-webkit-scrollbar-thumb { background: #c8b4c7; }
