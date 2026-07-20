@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:formula": "node tests/formula-runtime.test.cjs"
+    "test:formula": "node tests/formula-runtime.test.cjs && node tests/formula-goldens.test.cjs && python3 tests/extraction-metadata.test.py"
   },
   "dependencies": {
     "react": "18.3.1",

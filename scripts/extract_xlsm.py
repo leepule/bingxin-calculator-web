@@ -4,12 +4,16 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import zipfile
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 import openpyxl
+
+from export_formula_model import export_model, formula_model_metrics
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,6 +35,8 @@ CUSTOMIZATION_SLOTS = [
     "武器",
 ]
 
+UPDATE_DATE_PATTERN = re.compile(r"(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)")
+
 
 def clean(value: Any) -> Any:
     if isinstance(value, float):
@@ -42,6 +48,14 @@ def percent(value: Any) -> float | None:
     if isinstance(value, (int, float)):
         return round(float(value), 12)
     return None
+
+
+def update_date(update_notes: Any) -> str:
+    match = UPDATE_DATE_PATTERN.search(str(update_notes or ""))
+    if not match:
+        raise ValueError("全局设置!B10 未包含可识别的更新日期")
+    year, month, day = (int(part) for part in match.groups())
+    return date(year, month, day).isoformat()
 
 
 def workbook_metrics(path: Path) -> dict[str, Any]:
@@ -350,6 +364,9 @@ def extract_customization(workbook: openpyxl.Workbook) -> dict[str, Any]:
 
 def extract_main(workbook: openpyxl.Workbook) -> dict[str, Any]:
     worksheet = workbook["计算主页"]
+    score = workbook["角色属性"]["V15"].value
+    if not isinstance(score, (int, float)):
+        raise ValueError("角色属性!V15 未提供数值装分缓存")
     equipment = []
     for row in range(10, 22):
         slot = worksheet.cell(row, 7).value
@@ -373,7 +390,7 @@ def extract_main(workbook: openpyxl.Workbook) -> dict[str, Any]:
         "title": "冰心诀 · 暗影千机",
         "nickname": worksheet["C33"].value,
         "mainDps": clean(worksheet["G3"].value),
-        "score": 820991,
+        "score": clean(score),
         "stats": {
             "根骨": clean(worksheet["C11"].value),
             "基础攻击": clean(worksheet["D11"].value),
@@ -490,6 +507,8 @@ def extract_data(source: Path) -> dict[str, Any]:
     workbook = openpyxl.load_workbook(source, data_only=True, keep_vba=True)
     global_sheet = workbook["全局设置"]
     excel_metrics = workbook_metrics(source)
+    formula_metrics = formula_model_metrics(export_model(source))
+    update_notes = global_sheet["B10"].value
 
     wps_path = ROOT / "spreadsheets" / "冰心计算器WPS版-暗影千机v1.4.xlsm"
     source_comparison = [excel_metrics]
@@ -499,9 +518,10 @@ def extract_data(source: Path) -> dict[str, Any]:
     return {
         "meta": {
             "version": global_sheet["A2"].value,
-            "updatedAt": "2026-07-13",
-            "updateNotes": global_sheet["B10"].value,
+            "updatedAt": update_date(update_notes),
+            "updateNotes": update_notes,
             "source": source.name,
+            "formulaModel": formula_metrics,
             "sourceComparison": source_comparison,
             "reference": {
                 "title": "JX3BOX · 原始 Excel 参考页面",

@@ -104,6 +104,16 @@
     return SLOT_LAYOUT.map((slotDefinition) => selection[slotDefinition.key] || '').join('|');
   }
 
+  function dpsConsistency(cachedDps, formulaDps) {
+    const cachedNumber = Number(cachedDps);
+    const formulaNumber = Number(formulaDps);
+    if (!Number.isFinite(cachedNumber) || !Number.isFinite(formulaNumber)) {
+      return { isConsistent: false, relativeDifference: null };
+    }
+    const relativeDifference = Math.abs(formulaNumber - cachedNumber) / Math.max(1, Math.abs(cachedNumber));
+    return { isConsistent: relativeDifference <= 1e-8, relativeDifference };
+  }
+
   function createCalculator(workbookData) {
     const equipmentByName = new Map(workbookData.equipmentCatalog.map((equipment) => [equipment.name, equipment]));
     const catalogBySlot = new Map();
@@ -232,13 +242,22 @@
       const formulaOutputs = formulaWorkbook.getOutputs();
       const cachedDps = knownDpsBySignature.get(configurationSignature(selection, customizationValues));
       const hasCachedDps = cachedDps !== undefined;
-      const recalculatedDps = hasCachedDps ? cachedDps : formulaOutputs.dps;
+      const consistency = hasCachedDps
+        ? dpsConsistency(cachedDps, formulaOutputs.dps)
+        : { isConsistent: true, relativeDifference: null };
+      const displayedDps = hasCachedDps ? cachedDps : formulaOutputs.dps;
+      const canCustomize = !hasCachedDps || consistency.isConsistent;
+      let source = '完整公式重算';
+      if (hasCachedDps) source = canCustomize ? '工作簿缓存值' : '工作簿缓存值（只读）';
 
       return {
-        dps: recalculatedDps,
-        change: recalculatedDps / workbookData.main.mainDps - 1,
+        dps: displayedDps,
+        change: displayedDps / workbookData.main.mainDps - 1,
         attributeDelta: estimate.attributeDelta,
-        source: hasCachedDps ? '工作簿缓存值' : '完整公式重算',
+        source,
+        canCustomize,
+        formulaDps: formulaOutputs.dps,
+        cacheDifference: consistency.relativeDifference,
         selectedHaste: formulaOutputs.haste,
         outputs: formulaOutputs,
       };

@@ -1,12 +1,20 @@
-import { useEffect, useState } from 'react';
-import { workbookData } from './legacy.js';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { workbookData } from './workbook-data.js';
 import Overview from './pages/Overview.jsx';
-import Calculator from './pages/Calculator.jsx';
 import Builds from './pages/Builds.jsx';
 import Equipment from './pages/Equipment.jsx';
 import Analysis from './pages/Analysis.jsx';
 import Haste from './pages/Haste.jsx';
 import Workbook from './pages/Workbook.jsx';
+
+let calculatorPagePromise;
+
+function loadCalculatorPage() {
+  calculatorPagePromise ||= import('./pages/Calculator.jsx');
+  return calculatorPagePromise;
+}
+
+const Calculator = lazy(loadCalculatorPage);
 
 const tabs = [
   ['overview', '总览'],
@@ -96,13 +104,19 @@ export default function App() {
                 type="button"
                 className={`nav-button ${activeTab === tab ? 'is-active' : ''}`}
                 onClick={() => setActiveTab(tab)}
+                onFocus={tab === 'calculator' ? loadCalculatorPage : undefined}
+                onMouseEnter={tab === 'calculator' ? loadCalculatorPage : undefined}
               >
                 {label}
               </button>
             ))}
           </div>
         </nav>
-        <div className="pt-7">{pages[activeTab]}</div>
+        <div className="pt-7">
+          <Suspense fallback={<div className="card p-6 text-sm text-stone-500">正在加载计算器公式模型…</div>}>
+            {pages[activeTab]}
+          </Suspense>
+        </div>
       </main>
 
       <footer className="relative border-t border-white/5 px-5 py-8 text-center text-xs text-stone-600">

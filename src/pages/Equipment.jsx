@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { workbookData } from '../legacy.js';
+import { workbookData } from '../workbook-data.js';
 import { formatNumber } from '../lib/format.js';
 import { Dropdown, SectionTitle } from '../components/ui.jsx';
 

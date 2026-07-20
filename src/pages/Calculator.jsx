@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react';
-import { calculatorEngine, workbookData } from '../legacy.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { calculatorEngine } from '../calculator-runtime.js';
+import { workbookData } from '../workbook-data.js';
 import { formatCompact, formatNumber, formatPercent } from '../lib/format.js';
 import { Dropdown, Metric, SectionTitle, SelectCard } from '../components/ui.jsx';
 
 const storageKey = 'bingxin-custom-loadouts-v1';
+const readOnlyPresetMessage = '该工作簿预设缺少完整输入上下文，只能查看缓存结果。请先切回当前基准。';
+const calculationDelayMs = 80;
 
 function readSchemes() {
   const storedSchemes = localStorage.getItem(storageKey);
@@ -18,13 +21,14 @@ function readSchemes() {
   }
 }
 
-function EnhancementSelect({ field, value, onChange }) {
+function EnhancementSelect({ field, value, onChange, disabled }) {
   return (
     <SelectCard
       label={field.label}
       value={value}
       options={field.options}
       onChange={(event) => onChange(field, event.target.value)}
+      disabled={disabled}
     />
   );
 }
@@ -40,36 +44,43 @@ function PresetButtons({ onApply }) {
   );
 }
 
-function EquipmentInput({ selection, calculation, onEquipmentChange, onRecalculate }) {
+function EquipmentInput({ selection, disabled, isCalculating, onEquipmentChange, onRecalculate }) {
   return (
     <article className="card p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div><p className="eyebrow">Equipment Input</p><h3 className="mt-1 text-lg font-semibold text-white">十二部位配装</h3></div>
-        <button type="button" className="rounded-full border border-rose-400/30 bg-rose-400/10 px-4 py-2 text-xs font-medium text-rose-300" onClick={() => onRecalculate(calculation)}>重新计算</button>
+        <button type="button" disabled={disabled || isCalculating} className="rounded-full border border-rose-400/30 bg-rose-400/10 px-4 py-2 text-xs font-medium text-rose-300 disabled:cursor-not-allowed disabled:opacity-40" onClick={onRecalculate}>{isCalculating ? '计算中…' : '重新计算'}</button>
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         {calculatorEngine.slotLayout.map((slotDefinition) => {
           const equipmentOptions = calculatorEngine.catalogBySlot.get(slotDefinition.catalogSlot) || [];
-          return <SelectCard key={slotDefinition.key} label={slotDefinition.label} value={selection[slotDefinition.key]} options={equipmentOptions.map((equipment) => ({ value: equipment.name, label: `${equipment.name} · ${formatNumber(equipment.itemLevel)}` }))} onChange={(event) => onEquipmentChange(slotDefinition.key, event.target.value)} />;
+          return <SelectCard key={slotDefinition.key} label={slotDefinition.label} value={selection[slotDefinition.key]} options={equipmentOptions.map((equipment) => ({ value: equipment.name, label: `${equipment.name} · ${formatNumber(equipment.itemLevel)}` }))} onChange={(event) => onEquipmentChange(slotDefinition.key, event.target.value)} disabled={disabled} />;
         })}
       </div>
     </article>
   );
 }
 
-function ResultSummary({ calculation, formulaStats }) {
+function resultStatus(calculation, isCalculating) {
+  if (isCalculating) return ['重算状态', '等待新结果'];
+  if (!calculation.canCustomize) return ['重算状态', '只读锁定'];
+  return ['计算后加速', formatNumber(calculation.selectedHaste)];
+}
+
+function ResultSummary({ calculation, formulaStats, isCalculating }) {
+  const [statusLabel, statusValue] = resultStatus(calculation, isCalculating);
   return (
     <>
-      <article className="card relative overflow-hidden p-6">
+      <article className="card relative overflow-hidden p-6" aria-busy={isCalculating}>
         <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 translate-x-16 -translate-y-20 rounded-full bg-rose-400/15 blur-[70px]" />
         <div className="relative">
-          <div className="flex items-center justify-between gap-3"><p className="eyebrow">Result</p><span className="chip text-violet-300">{calculation.source}</span></div>
+          <div className="flex items-center justify-between gap-3"><p className="eyebrow">Result</p><span className="chip text-violet-300" role="status">{isCalculating ? '计算中…' : calculation.source}</span></div>
           <p className="mt-4 text-sm text-stone-500">预计副本 DPS</p>
           <p className="mt-1 text-4xl font-semibold tracking-[-0.05em] text-white">{formatCompact(calculation.dps)}</p>
-          <div className="mt-5 grid grid-cols-2 gap-3"><Metric label="相对基准" value={formatPercent(calculation.change, 2, true)} /><Metric label="计算后加速" value={formatNumber(calculation.selectedHaste)} /></div>
+          <div className="mt-5 grid grid-cols-2 gap-3"><Metric label="相对基准" value={formatPercent(calculation.change, 2, true)} /><Metric label={statusLabel} value={statusValue} /></div>
         </div>
       </article>
-      <article className="card p-5"><p className="text-sm font-semibold text-white">完整公式输出</p><div className="mt-4 grid grid-cols-2 gap-3">{formulaStats.map(([label, value]) => <Metric key={label} label={label} value={value} />)}</div></article>
+      {!isCalculating && calculation.canCustomize && <article className="card p-5"><p className="text-sm font-semibold text-white">完整公式输出</p><div className="mt-4 grid grid-cols-2 gap-3">{formulaStats.map(([label, value]) => <Metric key={label} label={label} value={value} />)}</div></article>}
     </>
   );
 }
@@ -92,8 +103,8 @@ function SavedSchemes({ schemeName, savedSchemes, onNameChange, onSave, onLoad, 
   );
 }
 
-function EnhancementSettings({ fieldsBySection, customization, onChange }) {
-  const selects = (section) => fieldsBySection[section].map((field) => <EnhancementSelect key={field.key} field={field} value={customization[field.key]} onChange={onChange} />);
+function EnhancementSettings({ fieldsBySection, customization, onChange, disabled }) {
+  const selects = (section) => fieldsBySection[section].map((field) => <EnhancementSelect key={field.key} field={field} value={customization[field.key]} onChange={onChange} disabled={disabled} />);
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
       <article className="card p-5 sm:p-6">
@@ -146,48 +157,112 @@ function RecommendationTable({ recommendationSlot, recommendations, calculation,
 export default function Calculator() {
   const [selection, setSelection] = useState(() => ({ ...calculatorEngine.baselineSelection }));
   const [customization, setCustomization] = useState(() => ({ ...calculatorEngine.baselineCustomization }));
+  const [calculation, setCalculation] = useState(null);
+  const [calculationRevision, setCalculationRevision] = useState(0);
+  const [isCalculating, setIsCalculating] = useState(true);
+  const [isInputLocked, setIsInputLocked] = useState(true);
+  const [calculationError, setCalculationError] = useState('');
   const [recommendationSlot, setRecommendationSlot] = useState('裤子');
   const [message, setMessage] = useState('');
   const [schemeName, setSchemeName] = useState('');
   const [savedSchemes, setSavedSchemes] = useState(readSchemes);
+  const workerRef = useRef(null);
+  const latestRequestId = useRef(0);
 
-  const calculation = useMemo(
-    () => calculatorEngine.calculate(selection, customization),
-    [selection, customization],
-  );
+  useEffect(() => {
+    const worker = new Worker(new URL('../engine/calculator-worker.mjs', import.meta.url), { type: 'module' });
+    workerRef.current = worker;
+    worker.onmessage = ({ data }) => {
+      if (data.requestId !== latestRequestId.current) return;
+      if (data.error) {
+        setCalculationError(data.error);
+        setIsCalculating(false);
+        setIsInputLocked(true);
+        return;
+      }
+      setCalculation(data.calculation);
+      setCalculationError('');
+      setIsCalculating(false);
+      setIsInputLocked(false);
+      setMessage((currentMessage) => currentMessage
+        ? `重算完成：${formatCompact(data.calculation.dps)}（${data.calculation.source}）`
+        : currentMessage);
+    };
+    worker.onerror = () => {
+      setCalculationError('公式计算线程启动失败，请刷新页面重试。');
+      setIsCalculating(false);
+      setIsInputLocked(true);
+    };
+    return () => worker.terminate();
+  }, []);
+
+  useEffect(() => {
+    const requestId = latestRequestId.current + 1;
+    latestRequestId.current = requestId;
+    const timeoutId = window.setTimeout(() => {
+      workerRef.current?.postMessage({ requestId, selection, customization });
+    }, calculationDelayMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [selection, customization, calculationRevision]);
+
   const customizationFields = useMemo(
     () => calculatorEngine.customizationFieldsFor(customization),
     [customization],
   );
   const recommendations = useMemo(
-    () => calculatorEngine.recommendations(recommendationSlot, selection, customization).slice(0, 12),
-    [recommendationSlot, selection, customization],
+    () => calculation && !isCalculating && calculation.canCustomize
+      ? calculatorEngine.recommendations(recommendationSlot, selection, customization).slice(0, 12)
+      : [],
+    [calculation, isCalculating, recommendationSlot, selection, customization],
   );
 
+  function startEditableCalculation() {
+    setCalculationError('');
+    setIsCalculating(true);
+    setIsInputLocked(false);
+  }
+
+  function startLockedCalculation() {
+    setCalculationError('');
+    setIsCalculating(true);
+    setIsInputLocked(true);
+  }
+
   function applyPreset(presetIndex) {
+    startLockedCalculation();
     if (presetIndex === 'baseline') {
       setSelection({ ...calculatorEngine.baselineSelection });
       setCustomization({ ...calculatorEngine.baselineCustomization });
-      setMessage('已读取当前基准配装。');
+      setMessage('正在读取当前基准配装。');
       return;
     }
     setSelection({ ...calculatorEngine.buildSelections[presetIndex] });
     setCustomization(calculatorEngine.compatibleCustomization(calculatorEngine.buildCustomizations[presetIndex]));
-    setMessage(`已读取装备 ${presetIndex + 1}。`);
+    setMessage(`正在读取装备 ${presetIndex + 1}。`);
   }
 
   function updateEquipment(slotKey, equipmentName) {
+    if (!calculation.canCustomize || isInputLocked) {
+      setMessage(readOnlyPresetMessage);
+      return;
+    }
+    startEditableCalculation();
     setSelection((currentSelection) => ({ ...currentSelection, [slotKey]: equipmentName }));
-    setMessage('装备已变更，完整公式链已自动重算。');
+    setMessage('装备已变更，正在等待完整公式重算。');
   }
 
   function updateEnhancement(field, rawValue) {
+    if (!calculation.canCustomize || isInputLocked) {
+      setMessage(readOnlyPresetMessage);
+      return;
+    }
+    startEditableCalculation();
     const fieldValue = field.valueType === 'number' ? Number(rawValue) : rawValue;
     setCustomization((currentCustomization) => calculatorEngine.compatibleCustomization({
       ...currentCustomization,
       [field.key]: fieldValue,
     }));
-    setMessage('附魔或镶嵌已变更，完整公式链已自动重算。');
+    setMessage('附魔或镶嵌已变更，正在等待完整公式重算。');
   }
 
   function persistSchemes(nextSchemes) {
@@ -213,12 +288,13 @@ export default function Calculator() {
   }
 
   function loadScheme(savedScheme) {
+    startLockedCalculation();
     setSelection({ ...savedScheme.selection });
     setCustomization(calculatorEngine.compatibleCustomization({
       ...calculatorEngine.baselineCustomization,
       ...savedScheme.customization,
     }));
-    setMessage(`已读取“${savedScheme.name}”。`);
+    setMessage(`正在读取“${savedScheme.name}”。`);
   }
 
   function deleteScheme(schemeIndex) {
@@ -226,6 +302,22 @@ export default function Calculator() {
     persistSchemes(savedSchemes.filter((_, index) => index !== schemeIndex));
     setMessage(`已删除“${deletedScheme.name}”。`);
   }
+
+  function recalculate() {
+    startEditableCalculation();
+    setCalculationRevision((currentRevision) => currentRevision + 1);
+  }
+
+  if (!calculation) {
+    return (
+      <section>
+        <SectionTitle eyebrow="Web Recalculation" title="自定义配装计算" description="正在准备完整公式运行时" />
+        <div className={`card p-6 text-sm ${calculationError ? 'text-rose-300' : 'text-stone-500'}`} aria-busy={!calculationError}>{calculationError || '首次公式计算中，请稍候…'}</div>
+      </section>
+    );
+  }
+
+  const controlsDisabled = isInputLocked || !calculation.canCustomize;
 
   const fieldsBySection = Object.fromEntries(['大附魔', '小附魔', '镶嵌'].map((section) => [
     section,
@@ -245,19 +337,21 @@ export default function Calculator() {
 
   return (
     <section>
-      <SectionTitle eyebrow="Web Recalculation" title="自定义配装计算" description="装备、大小附魔、镶嵌与精炼均由 React 状态驱动并进入完整公式链" />
+      <SectionTitle eyebrow="Web Recalculation" title="自定义配装计算" description="当前基准支持完整重算；缺少完整输入上下文的工作簿预设会自动切换为只读" />
       <PresetButtons onApply={applyPreset} />
       {message && <div className="mb-5 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.05] px-4 py-3 text-sm text-emerald-200/80">{message}</div>}
+      {calculationError && <div className="mb-5 rounded-xl border border-rose-300/20 bg-rose-300/[0.07] px-4 py-3 text-sm text-rose-200">{calculationError}</div>}
+      {!isCalculating && !calculation.canCustomize && <div className="mb-5 rounded-xl border border-amber-300/20 bg-amber-300/[0.07] px-4 py-3 text-sm leading-6 text-amber-100/80">该工作簿预设仅保留了缓存 DPS，缺少完整输入上下文，已锁定装备、附魔和推荐修改。当前公式上下文重算为 {formatCompact(calculation.formulaDps)}，与缓存值偏差 {calculation.cacheDifference === null ? '不可比较' : formatPercent(calculation.cacheDifference)}；请切回“当前基准”后再进行自定义计算。</div>}
       <div className="grid gap-5 xl:grid-cols-[1.22fr_.78fr]">
-        <EquipmentInput selection={selection} calculation={calculation} onEquipmentChange={updateEquipment} onRecalculate={(currentCalculation) => setMessage(`重算完成：${formatCompact(currentCalculation.dps)}（${currentCalculation.source}）`)} />
+        <EquipmentInput selection={selection} disabled={controlsDisabled} isCalculating={isCalculating} onEquipmentChange={updateEquipment} onRecalculate={recalculate} />
         <div className="space-y-5">
-          <ResultSummary calculation={calculation} formulaStats={formulaStats} />
+          <ResultSummary calculation={calculation} formulaStats={formulaStats} isCalculating={isCalculating} />
           <SavedSchemes schemeName={schemeName} savedSchemes={savedSchemes} onNameChange={setSchemeName} onSave={saveScheme} onLoad={loadScheme} onDelete={deleteScheme} />
         </div>
       </div>
-      <EnhancementSettings fieldsBySection={fieldsBySection} customization={customization} onChange={updateEnhancement} />
-      <SelectionDetails calculation={calculation} selection={selection} />
-      <RecommendationTable recommendationSlot={recommendationSlot} recommendations={recommendations} calculation={calculation} onSlotChange={setRecommendationSlot} onApply={(equipmentName) => updateEquipment(recommendationSlot, equipmentName)} />
+      <EnhancementSettings fieldsBySection={fieldsBySection} customization={customization} onChange={updateEnhancement} disabled={controlsDisabled} />
+      {!isCalculating && <SelectionDetails calculation={calculation} selection={selection} />}
+      {!isCalculating && calculation.canCustomize && <RecommendationTable recommendationSlot={recommendationSlot} recommendations={recommendations} calculation={calculation} onSlotChange={setRecommendationSlot} onApply={(equipmentName) => updateEquipment(recommendationSlot, equipmentName)} />}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { workbookData } from '../legacy.js';
+import { workbookData } from '../workbook-data.js';
 import { formatCompact, formatNumber, formatPercent, formatStat } from '../lib/format.js';
 import { Metric, SectionTitle } from '../components/ui.jsx';
 

@@ -22,6 +22,10 @@ const expectedOutputs = {
   surplus: APP_DATA.main.stats['破招'],
 };
 
+if (!baseline.canCustomize) {
+  throw new Error('当前基准与公式重算一致时不应被锁定');
+}
+
 for (const [outputName, expectedValue] of Object.entries(expectedOutputs)) {
   const actualValue = baseline.outputs[outputName];
   if (typeof expectedValue === 'number') {
@@ -41,6 +45,9 @@ const customCalculation = calculator.calculate(customSelection);
 if (customCalculation.source !== '完整公式重算') {
   throw new Error(`自定义配装未进入完整公式重算：${customCalculation.source}`);
 }
+if (!customCalculation.canCustomize) {
+  throw new Error('自定义配装不应被只读锁定');
+}
 if (customCalculation.dps === baseline.dps) {
   throw new Error('替换装备后 DPS 没有变化');
 }
@@ -59,6 +66,9 @@ const enhancementCalculation = calculator.calculate(calculator.baselineSelection
 if (enhancementCalculation.source !== '完整公式重算') {
   throw new Error(`自定义附魔镶嵌未进入完整公式重算：${enhancementCalculation.source}`);
 }
+if (!enhancementCalculation.canCustomize) {
+  throw new Error('自定义附魔镶嵌不应被只读锁定');
+}
 if (enhancementCalculation.dps === baseline.dps) {
   throw new Error('修改附魔镶嵌后 DPS 没有变化');
 }
@@ -70,8 +80,22 @@ if (!secondGemField.options.includes('破防') || !thirdGemField.options.include
   throw new Error('五彩石联动候选未按工作簿公式更新');
 }
 
+// 回归：缓存预设与公式上下文不一致时必须锁定编辑，避免单件装备导致 DPS 突变。
+for (const [buildIndex, buildSelection] of calculator.buildSelections.entries()) {
+  const buildCalculation = calculator.calculate(buildSelection, calculator.buildCustomizations[buildIndex]);
+  const relativeDifference = Math.abs(buildCalculation.outputs.dps - buildCalculation.dps)
+    / Math.max(1, Math.abs(buildCalculation.dps));
+  const shouldAllowCustomization = relativeDifference <= 1e-8;
+  if (buildCalculation.canCustomize !== shouldAllowCustomization) {
+    throw new Error(`装备 ${buildIndex + 1} 的只读状态与缓存偏差不一致`);
+  }
+  if (!shouldAllowCustomization && buildCalculation.source !== '工作簿缓存值（只读）') {
+    throw new Error(`装备 ${buildIndex + 1} 未明确标记为只读缓存值`);
+  }
+}
+
 let formulaAnchors = 0;
-let blankCoercions = 0;
+let serializedEmptyStrings = 0;
 for (const [sheetName, sheetModel] of Object.entries(BINGXIN_FORMULA_MODEL.sheets)) {
   for (const [address, cellModel] of Object.entries(sheetModel.cells)) {
     if (!cellModel.f) continue;
@@ -94,10 +118,8 @@ for (const [sheetName, sheetModel] of Object.entries(BINGXIN_FORMULA_MODEL.sheet
       continue;
     }
     if (calculatedValue === cachedValue) continue;
-    const isEquivalentBlank = (calculatedValue === '' && cachedValue === null)
-      || (calculatedValue === null && cachedValue === 0);
-    if (isEquivalentBlank) {
-      blankCoercions += 1;
+    if (calculatedValue === '' && cachedValue === null) {
+      serializedEmptyStrings += 1;
       continue;
     }
     throw new Error(`${cellReference} 缓存值不一致：${calculatedValue} !== ${cachedValue}`);
@@ -110,5 +132,5 @@ console.log(JSON.stringify({
   enhancementDps: enhancementCalculation.dps,
   replacement,
   formulaAnchors,
-  blankCoercions,
+  serializedEmptyStrings,
 }, null, 2));

@@ -51,6 +51,10 @@
     return matrix(value).map((row, rowIndex) => row.map((entry, columnIndex) => callback(entry, rowIndex, columnIndex)));
   }
 
+  function normalizedFormulaResult(calculatedValue) {
+    return mapMatrix(calculatedValue, (formulaEntry) => formulaEntry === null ? 0 : formulaEntry);
+  }
+
   function broadcast(left, right, callback) {
     if (!isMatrix(left) && !isMatrix(right)) return callback(left, right);
     const leftSize = dimensions(left);
@@ -246,7 +250,7 @@
       if (!cellModel) return null;
       this.activeCells.add(key);
       let calculatedValue;
-      if (cellModel.f) calculatedValue = this.evaluate(cellModel.f, { sheet: sheetName, locals: Object.create(null) });
+      if (cellModel.f) calculatedValue = normalizedFormulaResult(this.evaluate(cellModel.f, { sheet: sheetName, locals: Object.create(null) }));
       else if (Object.hasOwn(cellModel, 'v')) calculatedValue = cellModel.v;
       else calculatedValue = cellModel.c ?? null;
       this.activeCells.delete(key);

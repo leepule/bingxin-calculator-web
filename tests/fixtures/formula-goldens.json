@@ -1,0 +1,46 @@
+{
+  "formulaSemantics": {
+    "oracle": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+    "cases": {
+      "xlookupExact": 200,
+      "xlookupNextSmaller": 200,
+      "xlookupNextLarger": 300,
+      "ifLazyBranch": 7,
+      "ifErrorFallback": 9,
+      "blankDirectReference": 0,
+      "blankNumericCoercion": 1,
+      "emptyString": "",
+      "filterDynamicArray": [10, 30],
+      "broadcastAddition": [20, 30, 40, 50]
+    },
+    "notes": "LibreOffice 对带 match_mode 的 XLOOKUP 返回 #NAME?，近似匹配案例按 Excel XLOOKUP 合同单独断言。"
+  },
+  "calculator": {
+    "source": "spreadsheets/冰心计算器Excel版-暗影千机v1.4.xlsm",
+    "sourceSha256": "81669ff520c7334415dadd9b759ef30a12ed1a69f4af31e38df566f27a7ac374",
+    "oracle": "Excel 工作簿“装备推荐”缓存结果",
+    "relativeTolerance": 0.001,
+    "cases": [
+      {
+        "name": "会心无双特效裤",
+        "pants": "山色秋分•特效(会心 无双 41400)",
+        "expectedDps": 11681250.573387895
+      },
+      {
+        "name": "会心特效裤",
+        "pants": "醉醒间•特效(会心 41400)",
+        "expectedDps": 11678087.647722816
+      },
+      {
+        "name": "破防无双特效裤",
+        "pants": "空林鸟•特效(破防 无双 41400)",
+        "expectedDps": 11604502.021594508
+      },
+      {
+        "name": "精简多属性裤",
+        "pants": "芳生裤·觉•精简(会心 破防 无双 41400)",
+        "expectedDps": 11559740.8686071
+      }
+    ]
+  }
+}

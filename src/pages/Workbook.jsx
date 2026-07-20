@@ -1,9 +1,10 @@
-import { workbookData } from '../legacy.js';
+import { workbookData } from '../workbook-data.js';
 import { formatNumber } from '../lib/format.js';
 import { Metric, SectionTitle } from '../components/ui.jsx';
 
 export default function Workbook() {
   const primarySource = workbookData.meta.sourceComparison[0];
+  const formulaModel = workbookData.meta.formulaModel;
   const sheets = [...primarySource.sheets].sort((left, right) => right.formulas - left.formulas);
   const updateNotes = String(workbookData.meta.updateNotes || '').split('\n').map((line) => line.trim()).filter(Boolean);
 
@@ -36,7 +37,7 @@ export default function Workbook() {
           </div>
         </article>
         <div className="space-y-5">
-          <article className="card p-5"><p className="eyebrow">Formula Runtime</p><h3 className="mt-1 text-lg font-semibold text-white">网页公式链</h3><div className="mt-5 grid grid-cols-2 gap-3"><Metric label="公式锚点" value="4,273" /><Metric label="命名表达式" value="35" /><Metric label="工作表" value="34" /><Metric label="装备" value={formatNumber(workbookData.equipmentCatalog.length)} /></div></article>
+          <article className="card p-5"><p className="eyebrow">Formula Runtime</p><h3 className="mt-1 text-lg font-semibold text-white">网页公式链</h3><div className="mt-5 grid grid-cols-2 gap-3"><Metric label="公式锚点" value={formatNumber(formulaModel.formulaAnchorCount)} /><Metric label="命名表达式" value={formatNumber(formulaModel.namedExpressionCount)} /><Metric label="工作表" value={formatNumber(formulaModel.sheetCount)} /><Metric label="装备" value={formatNumber(workbookData.equipmentCatalog.length)} /></div></article>
           <article className="card p-5"><p className="text-sm font-semibold text-white">更新说明</p><div className="mt-4 space-y-2 text-xs leading-6 text-stone-500">{updateNotes.map((note) => <p key={note}>{note}</p>)}</div></article>
         </div>
       </div>

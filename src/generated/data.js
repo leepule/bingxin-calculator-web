@@ -4,6 +4,11 @@ window.APP_DATA = {
     "updatedAt": "2026-07-13",
     "updateNotes": "更新成功！\nv1.4  2026.07.13\n\n伤害：\n○同步7.13号技改内容（悟非侠提高）\n\n\n\n\n\n\n\n\n\n\n",
     "source": "冰心计算器Excel版-暗影千机v1.4.xlsm",
+    "formulaModel": {
+      "formulaAnchorCount": 4273,
+      "namedExpressionCount": 35,
+      "sheetCount": 34
+    },
     "sourceComparison": [
       {
         "file": "冰心计算器Excel版-暗影千机v1.4.xlsm",

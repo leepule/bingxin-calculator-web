@@ -219,6 +219,18 @@ def export_model(source: Path) -> dict[str, Any]:
     }
 
 
+def formula_model_metrics(model: dict[str, Any]) -> dict[str, int]:
+    return {
+        "formulaAnchorCount": sum(
+            "f" in cell
+            for sheet in model["sheets"].values()
+            for cell in sheet["cells"].values()
+        ),
+        "namedExpressionCount": len(model["names"]),
+        "sheetCount": len(model["sheets"]),
+    }
+
+
 def main() -> None:
     source = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else DEFAULT_SOURCE
     output = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else DEFAULT_OUTPUT
@@ -227,8 +239,8 @@ def main() -> None:
         "window.BINGXIN_FORMULA_MODEL = " + json.dumps(model, ensure_ascii=False, separators=(",", ":")) + ";\n",
         encoding="utf-8",
     )
-    formula_count = sum("f" in cell for sheet in model["sheets"].values() for cell in sheet["cells"].values())
-    print(f"已生成 {output}，公式锚点 {formula_count} 个，命名表达式 {len(model['names'])} 个。")
+    metrics = formula_model_metrics(model)
+    print(f"已生成 {output}，公式锚点 {metrics['formulaAnchorCount']} 个，命名表达式 {metrics['namedExpressionCount']} 个。")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-import { workbookData } from '../legacy.js';
+import { workbookData } from '../workbook-data.js';
 import { formatNumber, formatPercent } from '../lib/format.js';
 import { SectionTitle } from '../components/ui.jsx';
 

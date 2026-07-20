@@ -21,7 +21,7 @@ export function Metric({ label, value, detail }) {
   );
 }
 
-export function Dropdown({ value, options, onChange }) {
+export function Dropdown({ value, options, onChange, disabled = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const containerRef = useRef(null);
@@ -80,7 +80,7 @@ export function Dropdown({ value, options, onChange }) {
 
   return (
     <div className="relative" ref={containerRef} onKeyDown={(event) => event.key === 'Escape' && setIsOpen(false)}>
-      <button ref={buttonRef} type="button" className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-black/15 px-3 py-2.5 text-left text-xs text-stone-300 transition hover:border-white/15 hover:bg-white/[0.03]" aria-haspopup="listbox" aria-expanded={isOpen} onClick={toggleDropdown}>
+      <button ref={buttonRef} type="button" disabled={disabled} className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-black/15 px-3 py-2.5 text-left text-xs text-stone-300 transition hover:border-white/15 hover:bg-white/[0.03] disabled:cursor-not-allowed disabled:opacity-40" aria-haspopup="listbox" aria-expanded={isOpen} onClick={toggleDropdown}>
         <span className="min-w-0 truncate">{selectedLabel}</span>
         <span className={`shrink-0 text-[10px] text-stone-600 transition ${isOpen ? 'rotate-180' : ''}`}>▼</span>
       </button>
@@ -103,14 +103,14 @@ export function Dropdown({ value, options, onChange }) {
   );
 }
 
-export function SelectCard({ label, value, options, onChange }) {
+export function SelectCard({ label, value, options, onChange, disabled = false }) {
   const normalizedOptions = options.some((option) => String(option.value ?? option) === String(value))
     ? options
     : [value, ...options];
   return (
     <div className="block rounded-xl border border-white/[0.07] bg-black/10 p-3">
       <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-rose-300">{label}</span>
-      <Dropdown value={value} options={normalizedOptions} onChange={onChange} />
+      <Dropdown value={value} options={normalizedOptions} onChange={onChange} disabled={disabled} />
     </div>
   );
 }
