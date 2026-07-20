@@ -1,9 +1,9 @@
 self.window = self;
 
-await import('../generated/data.js');
-await import('../generated/formula-model.js');
-await import('./formula-runtime.js');
-await import('./calculator.js');
+import '../generated/data.js';
+import '../generated/formula-model.js';
+import './formula-runtime.js';
+import './calculator.js';
 
 const calculator = self.BingxinCalculator.createCalculator(self.APP_DATA);
 

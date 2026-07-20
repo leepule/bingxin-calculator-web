@@ -235,8 +235,9 @@ def main() -> None:
     source = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else DEFAULT_SOURCE
     output = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else DEFAULT_OUTPUT
     model = export_model(source)
+    raw_json = json.dumps(model, ensure_ascii=False, separators=(",", ":"))
     output.write_text(
-        "window.BINGXIN_FORMULA_MODEL = " + json.dumps(model, ensure_ascii=False, separators=(",", ":")) + ";\n",
+        "window.BINGXIN_FORMULA_MODEL = JSON.parse(" + json.dumps(raw_json, ensure_ascii=False) + ");\n",
         encoding="utf-8",
     )
     metrics = formula_model_metrics(model)
