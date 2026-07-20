@@ -23,6 +23,10 @@ jobs:
         with:
           node-version: 24
           cache: yarn
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install openpyxl
       - uses: actions/configure-pages@v5
         with:
           enablement: true
